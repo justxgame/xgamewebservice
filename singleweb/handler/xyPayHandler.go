@@ -12,6 +12,7 @@ import (
 	"xgamewebservice/singleweb/db"
 	"strconv"
 	"runtime/debug"
+	"fmt"
 )
 
 /**
@@ -49,7 +50,7 @@ func XyPayHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payAckModel protocol.XyPayAckModel
-	err := r.ParseForm()
+	var err = r.ParseForm()
 	if nil != err {
 		log.Printf("[XyPayHandler-%v] parse form error=%s ", requestSeq, err)
 	}
@@ -102,6 +103,18 @@ func XyPayHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 
+	//初始写入数据表
+	var payLogDto db.PayLogDto
+	payLogDto.Order_id = payAckModel.Orderid
+	payLogDto.Pay_log = fmt.Sprintf("%s", payAckModel)
+	payLogDto.State = db.PAY_INIT
+	err = db.InsertPayLog(payLogDto)
+	if (nil != err) {
+		log.Printf("[XyPayHandler-%v] init write db failed !", requestSeq, err)
+		xyResponseWrap(w, protocol.XY_DB_ERROR, "初始写数据库错误")
+		return
+	}
+
 	// 获取转发地址
 	if (payAckModel.Serverid == "") {
 		log.Panic("serverid is empty")
@@ -142,6 +155,11 @@ func XyPayHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("[XyPayHandler-%v] receive game server parse failed , resp_body=%v ", requestSeq, string(resp_body))
 		}
 		if (responseGameServerModel.Code == 0) {
+			// 更新DB成功
+			var payLogDto db.PayLogDto
+			payLogDto.Order_id = payAckModel.Orderid
+			payLogDto.State = db.PAY_SUCCESS
+			db.UpdatePayLogStateByOrderId(payLogDto)
 			// 成功
 			var response protocol.XyPayResponseModel
 			response.Code = 0
@@ -155,6 +173,14 @@ func XyPayHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Printf("[XyPayHandler-%v] failed code=%s , body=%s", requestSeq, resp.StatusCode, string(resp_body))
 	}
+
+	// 更新DB失败
+	payLogDto.Order_id = payAckModel.Orderid
+	if nil != err {
+		payLogDto.Msg = err.Error()
+	}
+	payLogDto.State = db.PAY_FAILED
+	db.UpdatePayLogStateByOrderId(payLogDto)
 
 	// final failed
 	xyResponseWrap(w, protocol.XY_OTHERS_ERROR, "其他错误")

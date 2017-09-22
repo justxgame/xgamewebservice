@@ -23,7 +23,7 @@ func LoadDbConfig(dbConfig DBConfig) {
 	}()
 
 	// "root:root@tcp(localhost:3306)/?charset=utf8"
-	dataSourceName = fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8",
+	dataSourceName = fmt.Sprintf("%v:%v@tcp(%v)/%v?charset=utf8&parseTime=True",
 		dbConfig.UserName,
 		dbConfig.Password,
 		dbConfig.Address,
