@@ -1,0 +1,12 @@
+{
+  "host": "localhost",
+  "port": 9999,
+  "db": {
+    "address": "117.50.8.212:3307",
+    "user_name": "root",
+    "password": "218B4DB3-0952-4101-B101-2F622BB81E26",
+    "database": "xgame_test"
+  },
+  "appKey": "b6da5900312eaaae2b3f78b9073106f0",
+  "payKey": "tdTmL9KWaNBwsW40FH7FVQKEYkx9UYfk"
+}
